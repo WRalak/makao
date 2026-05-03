@@ -1,0 +1,26 @@
+# Database
+MONGODB_URI=mongodb://localhost:27017/proprent
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-here
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Mapbox
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
+
+# Email
+SENDGRID_API_KEY=SG.your-sendgrid-key
+EMAIL_FROM=noreply@proprent.com
+
+# App URLs
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
