@@ -83,8 +83,74 @@ export default function AgentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // In a real app, these would be API calls
-      // For now, we'll use sample data
+      // Get auth token
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Fetch dashboard data from API
+      const response = await fetch('/api/agent/dashboard', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+
+      const data = await response.json();
+
+      // Set stats from API
+      setStats({
+        totalProperties: data.stats.totalProperties || 0,
+        activeListings: data.stats.activeListings || 0,
+        totalViews: data.stats.totalViews || 0,
+        newMessages: data.stats.newMessages || 0,
+        monthlyViews: data.stats.monthlyViews || 0,
+        averageResponseTime: data.stats.averageResponseTime || '2 hours',
+        conversionRate: data.stats.conversionRate || 0,
+        monthlyRevenue: data.stats.monthlyRevenue || 0,
+      });
+
+      // Transform API properties to component format
+      const transformedProperties = (data.recentProperties || []).map((prop: any) => ({
+        _id: prop.id.toString(),
+        title: prop.title,
+        address: { 
+          city: prop.city, 
+          state: prop.state 
+        },
+        rent: prop.rent_amount,
+        views: prop.view_count || 0,
+        inquiries: prop.message_count || 0,
+        status: prop.status,
+        createdAt: prop.created_at
+      }));
+
+      // Transform API messages to component format
+      const transformedMessages = (data.recentMessages || []).map((msg: any) => ({
+        _id: msg.id.toString(),
+        senderName: msg.sender_name || 'Unknown',
+        senderEmail: msg.sender_email || '',
+        propertyTitle: msg.property_title || 'Unknown Property',
+        message: msg.message || '',
+        createdAt: msg.created_at,
+        read: msg.read || false
+      }));
+
+      setRecentProperties(transformedProperties);
+      setRecentMessages(transformedMessages);
+
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      
+      // Fallback to sample data if API fails
       setStats({
         totalProperties: 24,
         activeListings: 18,
@@ -158,8 +224,6 @@ export default function AgentDashboard() {
           read: true,
         },
       ]);
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
     } finally {
       setIsLoading(false);
     }

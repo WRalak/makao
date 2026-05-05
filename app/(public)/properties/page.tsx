@@ -18,6 +18,7 @@ import {
   Users,
   Building
 } from 'lucide-react';
+import EnhancedPropertyFilter, { PropertyFilters } from '@/components/EnhancedPropertyFilter';
 
 interface Property {
   _id: string;
@@ -85,12 +86,26 @@ interface Agent {
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState({ min: 10000, max: 500000 });
-  const [bedrooms, setBedrooms] = useState('any');
-  const [bathrooms, setBathrooms] = useState('any');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filters, setFilters] = useState<PropertyFilters>({
+    search: '',
+    city: '',
+    state: '',
+    minPrice: 10000,
+    maxPrice: 500000,
+    bedrooms: 'any',
+    bathrooms: 'any',
+    propertyType: 'all',
+    petPolicy: 'any',
+    featured: false,
+    furnished: false,
+    availableNow: false,
+    sortBy: 'newest',
+    amenities: [],
+    minSquareFeet: 0,
+    maxSquareFeet: 10000,
+  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -101,8 +116,10 @@ export default function PropertiesPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const city = searchParams.get('city');
-    if (city) setSearchTerm(city);
+    const city = searchParams?.get('city');
+    if (city) {
+      setFilters(prev => ({ ...prev, city }));
+    }
     fetchProperties();
   }, [searchParams]);
 
@@ -110,11 +127,22 @@ export default function PropertiesPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchTerm) params.set('city', searchTerm);
-      if (priceRange.min > 10000) params.set('minPrice', priceRange.min.toString());
-      if (priceRange.max < 500000) params.set('maxPrice', priceRange.max.toString());
-      if (bedrooms !== 'any') params.set('bedrooms', bedrooms);
-      if (bathrooms !== 'any') params.set('bathrooms', bathrooms);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.city) params.set('city', filters.city);
+      if (filters.state) params.set('state', filters.state);
+      if (filters.minPrice > 10000) params.set('minPrice', filters.minPrice.toString());
+      if (filters.maxPrice < 500000) params.set('maxPrice', filters.maxPrice.toString());
+      if (filters.bedrooms !== 'any') params.set('bedrooms', filters.bedrooms);
+      if (filters.bathrooms !== 'any') params.set('bathrooms', filters.bathrooms);
+      if (filters.propertyType !== 'all') params.set('propertyType', filters.propertyType);
+      if (filters.petPolicy !== 'any') params.set('petPolicy', filters.petPolicy);
+      if (filters.featured) params.set('featured', 'true');
+      if (filters.furnished) params.set('furnished', 'true');
+      if (filters.availableNow) params.set('availableNow', 'true');
+      if (filters.sortBy !== 'newest') params.set('sort', filters.sortBy);
+      if (filters.minSquareFeet > 0) params.set('minSquareFeet', filters.minSquareFeet.toString());
+      if (filters.maxSquareFeet < 10000) params.set('maxSquareFeet', filters.maxSquareFeet.toString());
+      if (filters.amenities.length > 0) params.set('amenities', filters.amenities.join(','));
       params.set('page', page.toString());
 
       const response = await fetch(`/api/properties?${params}`);
@@ -130,7 +158,8 @@ export default function PropertiesPage() {
     }
   };
 
-  const handleSearch = () => {
+  const handleFilterChange = (newFilters: PropertyFilters) => {
+    setFilters(newFilters);
     fetchProperties(1);
   };
 
@@ -215,163 +244,12 @@ export default function PropertiesPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border-b">
-        <div className="container-responsive py-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by city, neighborhood, or property name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Search
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Filters */}
-      <div className="bg-white border-b hidden sm:block">
-        <div className="container-responsive py-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  placeholder="Min (KES)"
-                  value={priceRange.min}
-                  onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) || 0 })}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-                <input
-                  type="number"
-                  placeholder="Max (KES)"
-                  value={priceRange.max}
-                  onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) || 500000 })}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
-              <select
-                value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="any">Any</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4+</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-              <select
-                value={bathrooms}
-                onChange={(e) => setBathrooms(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
-              >
-                <option value="any">Any</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3+</option>
-              </select>
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={handleSearch}
-                className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Filters */}
-      {showMobileFilters && (
-        <div className="bg-white border-b sm:hidden">
-          <div className="container-responsive py-4">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Min (KES)"
-                    value={priceRange.min}
-                    onChange={(e) => setPriceRange({ ...priceRange, min: parseInt(e.target.value) || 0 })}
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max (KES)"
-                    value={priceRange.max}
-                    onChange={(e) => setPriceRange({ ...priceRange, max: parseInt(e.target.value) || 500000 })}
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
-                <select
-                  value={bedrooms}
-                  onChange={(e) => setBedrooms(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="any">Any</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4+</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-                <select
-                  value={bathrooms}
-                  onChange={(e) => setBathrooms(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="any">Any</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3+</option>
-                </select>
-              </div>
-              
-              <button
-                onClick={() => {
-                  handleSearch();
-                  setShowMobileFilters(false);
-                }}
-                className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Search and Filters */}
+      <EnhancedPropertyFilter
+        onFilterChange={handleFilterChange}
+        initialFilters={filters}
+        compact={false}
+      />
 
       {/* Results Header */}
       <div className="container-responsive py-4">
@@ -381,7 +259,8 @@ export default function PropertiesPage() {
               {pagination.total} Properties Found
             </h2>
             <p className="text-gray-600">
-              {searchTerm && `Searching in "${searchTerm}"`}
+              {filters.search && `Searching for "${filters.search}"`}
+              {filters.city && ` in ${filters.city}`}
             </p>
           </div>
           <div className="hidden sm:flex items-center space-x-2">

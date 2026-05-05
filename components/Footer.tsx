@@ -1,51 +1,118 @@
 import Link from 'next/link';
 import { Home } from 'lucide-react';
 
+interface FooterLink {
+  label: string;
+  href: string;
+}
+
+interface FooterSection {
+  title: string;
+  links: FooterLink[];
+}
+
 export default function Footer() {
+  const footerSections: FooterSection[] = [
+    {
+      title: "Company",
+      links: [
+        { label: "About Us", href: "/about" },
+        { label: "Careers", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Blog", href: "/blog" }
+      ]
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Privacy Policy", href: "/privacy" },
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Sitemap", href: "/sitemap" },
+        { label: "Cookie Policy", href: "/cookies" }
+      ]
+    },
+    {
+      title: "Resources",
+      links: [
+        { label: "Tenant Guide", href: "/tenant-guide" },
+        { label: "Agent Hub", href: "/agent-hub" },
+        { label: "Help Center", href: "/help" },
+        { label: "FAQs", href: "/faqs" }
+      ]
+    },
+    {
+      title: "Follow Us",
+      links: [
+        { label: "Facebook", href: "https://facebook.com" },
+        { label: "Twitter", href: "https://twitter.com" },
+        { label: "Instagram", href: "https://instagram.com" },
+        { label: "LinkedIn", href: "https://linkedin.com" }
+      ]
+    }
+  ];
+
   return (
-    <footer className="bg-gray-900 text-white py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div>
+    <footer className="bg-white border-t border-slate-100 pt-12 pb-8">
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          {/* Brand Column */}
+          <div className="col-span-1">
             <div className="flex items-center mb-4">
               <Home className="h-6 w-6 text-blue-400" />
-              <span className="ml-2 text-lg font-bold">Makao</span>
+              <span className="ml-2 text-lg font-bold">PropRent</span>
             </div>
-            <p className="text-gray-400">
-              Your trusted East African platform for finding the perfect rental home.
+            <p className="font-body-sm text-slate-500 mb-6 leading-relaxed">
+              Redefining the East African rental market with transparency, technology, and superior service for tenants and agents alike.
             </p>
+            <div className="flex gap-4">
+              <span className="material-symbols-outlined cursor-pointer text-slate-400 hover:text-blue-900 transition-colors">
+                public
+              </span>
+              <span className="material-symbols-outlined cursor-pointer text-slate-400 hover:text-blue-900 transition-colors">
+                group
+              </span>
+              <span className="material-symbols-outlined cursor-pointer text-slate-400 hover:text-blue-900 transition-colors">
+                share
+              </span>
+            </div>
           </div>
           
-          <div>
-            <h4 className="font-semibold mb-4">For Tenants</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/properties" className="hover:text-white">Browse Properties</Link></li>
-              <li><Link href="/favorites" className="hover:text-white">Saved Properties</Link></li>
-              <li><Link href="/messages" className="hover:text-white">Messages</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-4">For Agents</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/agent/dashboard" className="hover:text-white">Dashboard</Link></li>
-              <li><Link href="/agent/listings" className="hover:text-white">My Listings</Link></li>
-              <li><Link href="/agent/profile" className="hover:text-white">Profile</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/help" className="hover:text-white">Help Center</Link></li>
-              <li><Link href="/contact" className="hover:text-white">Contact Us</Link></li>
-              <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-            </ul>
-          </div>
+          {/* Link Columns */}
+          {footerSections.map((section) => (
+            <div key={section.title}>
+              <h4 className="font-label-bold text-slate-800 mb-6">{section.title}</h4>
+              <ul className="space-y-3">
+                {section.links.map((link) => (
+                  <li key={link.label}>
+                    <a 
+                      href={link.href} 
+                      className="font-body-sm text-slate-500 hover:text-blue-900 transition-colors"
+                      target={link.href.startsWith('http') ? '_blank' : undefined}
+                      rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
         
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 Makao. All rights reserved. Serving Kenya, Tanzania, Uganda, Rwanda & Burundi.</p>
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="font-body-sm text-slate-400 text-center sm:text-left">
+            © 2024 PropRent. All rights reserved. Licensed Real Estate Brokerage - East Africa.
+          </p>
+          <div className="flex gap-6">
+            <a href="#" className="font-body-sm text-slate-400 hover:text-blue-900 transition-colors">
+              English (US)
+            </a>
+            <a href="#" className="font-body-sm text-slate-400 hover:text-blue-900 transition-colors">
+              KES
+            </a>
+          </div>
         </div>
       </div>
     </footer>

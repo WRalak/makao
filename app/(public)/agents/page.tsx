@@ -19,6 +19,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import EnhancedAgentFilter, { AgentFilters } from '@/components/EnhancedAgentFilter';
 
 interface Agent {
   _id: string;
@@ -31,13 +32,13 @@ interface Agent {
   license?: string;
   specialties: string[];
   languages: string[];
-  rating: number;
-  reviews: number;
-  propertiesCount: number;
-  responseTime: string;
-  verified: boolean;
-  featured: boolean;
-  createdAt: string;
+  rating?: number;
+  reviews?: number;
+  propertiesCount?: number;
+  responseTime?: string;
+  verified?: boolean;
+  featured?: boolean;
+  createdAt?: string;
   address: {
     city: string;
     state: string;
@@ -51,11 +52,19 @@ interface Agent {
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
-  const [specialtyFilter, setSpecialtyFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('rating');
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<AgentFilters>({
+    search: '',
+    city: '',
+    specialty: 'all',
+    languages: [],
+    minRating: 0,
+    verified: false,
+    featured: false,
+    availableNow: false,
+    sortBy: 'rating',
+    experience: 'all',
+    responseTime: 'all',
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -86,16 +95,23 @@ export default function AgentsPage() {
 
   useEffect(() => {
     fetchAgents();
-  }, [searchTerm, cityFilter, specialtyFilter, sortBy]);
+  }, [filters]);
 
   const fetchAgents = async (page = 1) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (searchTerm) params.set('search', searchTerm);
-      if (cityFilter) params.set('city', cityFilter);
-      if (specialtyFilter !== 'all') params.set('specialty', specialtyFilter);
-      params.set('sort', sortBy);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.city) params.set('city', filters.city);
+      if (filters.specialty !== 'all') params.set('specialty', filters.specialty);
+      if (filters.languages.length > 0) params.set('languages', filters.languages.join(','));
+      if (filters.minRating > 0) params.set('minRating', filters.minRating.toString());
+      if (filters.verified) params.set('verified', 'true');
+      if (filters.featured) params.set('featured', 'true');
+      if (filters.availableNow) params.set('availableNow', 'true');
+      if (filters.experience !== 'all') params.set('experience', filters.experience);
+      if (filters.responseTime !== 'all') params.set('responseTime', filters.responseTime);
+      params.set('sort', filters.sortBy);
       params.set('page', page.toString());
       params.set('limit', '12');
 
@@ -110,6 +126,11 @@ export default function AgentsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFilterChange = (newFilters: AgentFilters) => {
+    setFilters(newFilters);
+    fetchAgents(1);
   };
 
   const handlePageChange = (page: number) => {
@@ -193,86 +214,12 @@ export default function AgentsPage() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border-b">
-        <div className="container-responsive py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search agents by name, company, or specialty..."
-                className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm sm:text-base"
-            >
-              <Filter className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Filters
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-white border-b">
-          <div className="container-responsive py-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                <select
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Cities</option>
-                  {cities.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Specialty</label>
-                <select
-                  value={specialtyFilter}
-                  onChange={(e) => setSpecialtyFilter(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Specialties</option>
-                  {specialties.map((specialty) => (
-                    <option key={specialty} value={specialty}>
-                      {specialty}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="rating">Highest Rated</option>
-                  <option value="properties">Most Properties</option>
-                  <option value="reviews">Most Reviews</option>
-                  <option value="response">Fastest Response</option>
-                  <option value="newest">Newest First</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Search and Filters */}
+      <EnhancedAgentFilter
+        onFilterChange={handleFilterChange}
+        initialFilters={filters}
+        compact={false}
+      />
 
       {/* Results Header */}
       <div className="container-responsive py-4">
@@ -327,10 +274,10 @@ export default function AgentsPage() {
 
                   <div className="flex items-center mb-3">
                     <div className="flex items-center">
-                      {renderStars(agent.rating)}
+                      {renderStars(Number(agent.rating) || 0)}
                     </div>
                     <span className="ml-2 text-sm text-gray-600">
-                      {agent.rating.toFixed(1)} ({agent.reviews} reviews)
+                      {(Number(agent.rating) || 0).toFixed(1)} ({agent.reviews || 0} reviews)
                     </span>
                   </div>
 
@@ -339,7 +286,7 @@ export default function AgentsPage() {
                   </p>
 
                   <div className="space-y-2 mb-4">
-                    {agent.specialties.length > 0 && (
+                    {agent.specialties && agent.specialties.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {agent.specialties.slice(0, 3).map((specialty, index) => (
                           <span
@@ -361,7 +308,7 @@ export default function AgentsPage() {
                   <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <Building className="h-4 w-4 mr-1" />
-                      <span>{agent.propertiesCount} properties</span>
+                      <span>{agent.propertiesCount || 0} properties</span>
                     </div>
                     <div className="flex items-center">
                       <MessageSquare className="h-4 w-4 mr-1" />

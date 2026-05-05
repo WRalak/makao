@@ -2,328 +2,431 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Home, Users, Star, ChevronLeft, ChevronRight, Check, ArrowRight, MessageSquare, Calendar } from 'lucide-react';
+import HeroSection, { SearchParams } from '@/components/HeroSection';
+import MetricsSection from '@/components/MetricsSection';
+import FeaturedProperties from '@/components/FeaturedProperties';
+import HowItWorks from '@/components/HowItWorks';
+import Newsletter from '@/components/Newsletter';
+import { Property } from '@/components/PropertyCard';
+
+// Property interface matching API response
+interface ApiProperty {
+  id: string;
+  title: string;
+  description: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  rent_amount: number;
+  rent_currency: string;
+  bedrooms: number;
+  bathrooms: number;
+  square_feet: number;
+  images: string[];
+  status: string;
+  is_featured: boolean;
+  is_active: boolean;
+  is_verified: boolean;
+  amenities: string[];
+  pet_policy: string;
+  furnished: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Convert API property to component Property format
+const convertApiProperty = (apiProp: ApiProperty): Property => ({
+  id: apiProp.id,
+  title: apiProp.title,
+  description: apiProp.description,
+  rent: apiProp.rent_amount,
+  rentCurrency: apiProp.rent_currency,
+  bedrooms: apiProp.bedrooms,
+  bathrooms: apiProp.bathrooms,
+  squareFeet: apiProp.square_feet,
+  address: {
+    street: apiProp.street,
+    city: apiProp.city,
+    state: apiProp.state,
+    country: apiProp.country
+  },
+  images: apiProp.images,
+  status: apiProp.status,
+  featured: apiProp.is_featured,
+  active: apiProp.is_active,
+  verified: apiProp.is_verified,
+  amenities: apiProp.amenities,
+  petPolicy: apiProp.pet_policy === 'allowed' ? 'Pets allowed' : 'No pets',
+  furnished: apiProp.furnished,
+  createdAt: apiProp.created_at,
+  updatedAt: apiProp.updated_at
+});
+
+// Fallback sample data for East Africa
+const sampleProperties: Property[] = [
+  {
+    id: "1",
+    title: "The Pearl Penthouse",
+    description: "Luxury penthouse with panoramic city views of Nairobi skyline",
+    rent: 185000,
+    rentCurrency: "KES",
+    bedrooms: 3,
+    bathrooms: 3,
+    squareFeet: 2400,
+    address: {
+      street: "Upper Hill Road",
+      city: "Nairobi",
+      state: "Nairobi County",
+      country: "Kenya"
+    },
+    images: ["https://images.unsplash.com/photo-1567496898669-ee935f5f647a?w=800"],
+    status: "available",
+    featured: false,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Gym", "Pool"],
+    petPolicy: "No pets",
+    furnished: true,
+    createdAt: "2024-01-15T00:00:00Z",
+    updatedAt: "2024-01-15T00:00:00Z"
+  },
+  {
+    id: "2",
+    title: "Ocean Breeze Villa",
+    description: "Modern villa with ocean views in Mombasa",
+    rent: 95000,
+    rentCurrency: "KES",
+    bedrooms: 4,
+    bathrooms: 3,
+    squareFeet: 2800,
+    address: {
+      street: "Nyali Beach Road",
+      city: "Mombasa",
+      state: "Mombasa County",
+      country: "Kenya"
+    },
+    images: ["https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800"],
+    status: "available",
+    featured: true,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Garden", "Security"],
+    petPolicy: "Pets allowed",
+    furnished: false,
+    createdAt: "2024-01-20T00:00:00Z",
+    updatedAt: "2024-01-20T00:00:00Z"
+  },
+  {
+    id: "3",
+    title: "Kigali Heights Apartment",
+    description: "Modern apartment in Kigali with city views",
+    rent: 55000,
+    rentCurrency: "KES",
+    bedrooms: 2,
+    bathrooms: 2,
+    squareFeet: 1200,
+    address: {
+      street: "Kacyiru Avenue",
+      city: "Kigali",
+      state: "Kigali City",
+      country: "Rwanda"
+    },
+    images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800"],
+    status: "available",
+    featured: false,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Gym"],
+    petPolicy: "No pets",
+    furnished: true,
+    createdAt: "2024-01-25T00:00:00Z",
+    updatedAt: "2024-01-25T00:00:00Z"
+  },
+  {
+    id: "4",
+    title: "Serengeti View Lodge",
+    description: "Spacious lodge with Serengeti views",
+    rent: 250000,
+    rentCurrency: "KES",
+    bedrooms: 5,
+    bathrooms: 4,
+    squareFeet: 3500,
+    address: {
+      street: "Serengeti Road",
+      city: "Arusha",
+      state: "Arusha Region",
+      country: "Tanzania"
+    },
+    images: ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"],
+    status: "available",
+    featured: true,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Pool", "Garden"],
+    petPolicy: "Pets allowed",
+    furnished: false,
+    createdAt: "2024-01-30T00:00:00Z",
+    updatedAt: "2024-01-30T00:00:00Z"
+  },
+  {
+    id: "5",
+    title: "Garden City Residences",
+    description: "Modern apartment complex with garden views",
+    rent: 120000,
+    rentCurrency: "KES",
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFeet: 1800,
+    address: {
+      street: "Garden City Road",
+      city: "Nairobi",
+      state: "Nairobi County",
+      country: "Kenya"
+    },
+    images: ["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"],
+    status: "available",
+    featured: false,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Gym", "Security"],
+    petPolicy: "No pets",
+    furnished: true,
+    createdAt: "2024-02-05T00:00:00Z",
+    updatedAt: "2024-02-05T00:00:00Z"
+  },
+  {
+    id: "6",
+    title: "Harbor View Apartments",
+    description: "Waterfront apartments with harbor views",
+    rent: 75000,
+    rentCurrency: "KES",
+    bedrooms: 2,
+    bathrooms: 2,
+    squareFeet: 1400,
+    address: {
+      street: "Harbor View Drive",
+      city: "Dar es Salaam",
+      state: "Dar es Salaam Region",
+      country: "Tanzania"
+    },
+    images: ["https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800"],
+    status: "available",
+    featured: false,
+    active: true,
+    verified: true,
+    amenities: ["WiFi", "Parking", "Security"],
+    petPolicy: "Pets allowed",
+    furnished: false,
+    createdAt: "2024-02-10T00:00:00Z",
+    updatedAt: "2024-02-10T00:00:00Z"
+  }
+];
 
 export default function HomePage() {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [currentFeature, setCurrentFeature] = useState(0);
-  const [email, setEmail] = useState('');
+  const [searchResults, setSearchResults] = useState<Property[]>([]);
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const testimonials = [
-    {
-      name: "Amina Mohamed",
-      role: "Tenant, Nairobi",
-      content: "Found my perfect apartment in Westlands in just 3 days! The platform is so intuitive and the agents are very responsive.",
-      rating: 5
-    },
-    {
-      name: "Joseph Nkoy",
-      role: "Property Agent, Dar es Salaam",
-      content: "As an agent, Makao has helped me reach more qualified renters. The platform is professional and the support team is amazing.",
-      rating: 5
-    },
-    {
-      name: "Grace Babu",
-      role: "Tenant, Kampala",
-      content: "I love how user-friendly the platform is. The virtual tours saved me so much time and I found my dream home in Kololo without endless visits.",
-      rating: 5
+  // Fetch featured properties on component mount
+  useEffect(() => {
+    fetchFeaturedProperties();
+  }, []);
+
+  const fetchFeaturedProperties = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/properties?featured=true&limit=6');
+      if (!response.ok) {
+        throw new Error('Failed to fetch properties');
+      }
+      
+      const data = await response.json();
+      const convertedProperties = data.properties.map(convertApiProperty);
+      
+      setFeaturedProperties(convertedProperties);
+      setSearchResults(convertedProperties);
+    } catch (err) {
+      console.error('Error fetching properties:', err);
+      setError('Failed to load properties. Showing sample data.');
+      // Use sample data as fallback
+      setFeaturedProperties(sampleProperties);
+      setSearchResults(sampleProperties);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const features = [
-    { icon: Search, title: "Search", description: "Browse thousands of verified rental properties" },
-    { icon: MessageSquare, title: "Message", description: "Connect directly with property owners" },
-    { icon: Calendar, title: "Tour", description: "Schedule in-person or virtual tours" }
-  ];
+  const handleSearch = async (params: SearchParams) => {
+    console.log('Search params:', params);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Build search query parameters
+      const searchParams = new URLSearchParams();
+      if (params.location) {
+        searchParams.append('city', params.location);
+      }
+      if (params.propertyType) {
+        searchParams.append('propertyType', params.propertyType);
+      }
+      if (params.priceRange) {
+        const [minPrice, maxPrice] = params.priceRange;
+        if (minPrice) searchParams.append('minRent', minPrice.toString());
+        if (maxPrice) searchParams.append('maxRent', maxPrice.toString());
+      }
+      // Note: bedrooms not available in current SearchParams interface
+      searchParams.append('limit', '12');
+      
+      const response = await fetch(`/api/search?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+      
+      const data = await response.json();
+      const convertedProperties = data.properties.map(convertApiProperty);
+      
+      setSearchResults(convertedProperties);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError('Search failed. Showing featured properties.');
+      // Fallback to featured properties
+      setSearchResults(featuredProperties);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const stats = [
-    { number: "15,000+", label: "Makao Listed" },
-    { number: "8,000+", label: "Happy Tenants" },
-    { number: "1,200+", label: "Verified Agents" },
-    { number: "25+", label: "East African Cities" },
-  ];
+  const handleSignIn = () => {
+    console.log('Sign in clicked');
+    // Navigate to sign in page or open modal
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const handleListProperty = () => {
+    console.log('List property clicked');
+    // Navigate to listing page or open modal
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentFeature((prev) => (prev + 1) % features.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  const handleViewAllListings = () => {
+    console.log('View all listings clicked');
+    // Navigate to all listings page
+  };
+
+  const handlePropertyClick = (id: string) => {
+    console.log('Property clicked:', id);
+    // Navigate to property detail page
+  };
+
+  const handleFavoriteClick = (id: string) => {
+    console.log('Favorite toggled for property:', id);
+    // Update favorites in state/backend
+  };
+
+  const handleNewsletterSubscribe = async (email: string) => {
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error('Email already subscribed');
+        }
+        throw new Error(data.error || 'Subscription failed');
+      }
+      
+      console.log('Newsletter subscription successful:', data);
+      return data;
+    } catch (err) {
+      console.error('Newsletter subscription error:', err);
+      throw err;
+    }
+  };
 
   return (
-    <div>
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <div className="text-center">
-            <div className="animate-fade-in">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-6">
-                Find Your Perfect
-                <span className="text-blue-600"> Makao</span>
-              </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto">
-                Discover amazing rental properties across East Africa. From Nairobi apartments to Dar es Salaam homes, Kampala flats to Kigali houses - find your perfect space today.
-              </p>
-            </div>
-            
-            {/* Animated Search Bar */}
-            <div className="max-w-2xl mx-auto animate-slide-up px-4">
-              <div className="bg-white rounded-xl shadow-2xl p-2 flex flex-col sm:flex-row gap-2">
-                <div className="flex items-center flex-1">
-                  <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 ml-2 sm:ml-3" />
-                  <input
-                    type="text"
-                    placeholder="Search Nairobi, Dar es Salaam, Kampala, Kigali..."
-                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 outline-none text-sm sm:text-lg"
-                  />
-                </div>
-                <Link href="/properties" className="bg-blue-600 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base text-center">
-                  Search
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Decorative Background Elements */}
-        <div className="relative">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-20 animate-pulse"></div>
-          <div className="absolute top-20 right-0 w-96 h-96 bg-purple-200 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute bottom-0 left-1/2 w-80 h-80 bg-indigo-200 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }}></div>
-        </div>
-      </div>
-
-      {/* Stats Section */}
-      <div className="container-responsive py-8 sm:py-12 lg:py-16">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trusted by Thousands</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">Join our growing community of property seekers and agents</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.2}s` }}>
-              <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">{stat.number}</div>
-              <div className="text-xs sm:text-sm md:text-base text-gray-600">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* How It Works */}
-      <div className="container-responsive py-8 sm:py-12 lg:py-16">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How Makao Works</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">Find your perfect rental property in just three simple steps</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 text-center transform hover:scale-105 transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.3}s` }}>
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-full p-4 w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 flex items-center justify-center shadow-lg">
-                  <Icon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Featured Properties */}
-      <div className="container-responsive py-16">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Featured Properties</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">Discover our handpicked selection of premium rental properties</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              id: "nairobi-westlands-apartment",
-              title: "Modern Westlands Apartment",
-              location: "Westlands, Nairobi",
-              price: "KES 85,000/month",
-              beds: 2,
-              baths: 2,
-              sqft: 1200,
-              image: "🏙️"
-            },
-            {
-              id: "dar-upanga-house",
-              title: "Spacious Upanga House",
-              location: "Upanga, Dar es Salaam",
-              price: "TZS 2,500,000/month",
-              beds: 3,
-              baths: 2,
-              sqft: 1800,
-              image: "🏡"
-            },
-            {
-              id: "kampala-kololo-studio",
-              title: "Trendy Kololo Studio",
-              location: "Kololo, Kampala",
-              price: "UGX 1,800,000/month",
-              beds: 1,
-              baths: 1,
-              sqft: 650,
-              image: "🏢"
-            }
-          ].map((property, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.2}s` }}>
-              <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-6xl">
-                {property.image}
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{property.title}</h3>
-                <div className="flex items-center text-gray-600 mb-4">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  <span>{property.location}</span>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-bold text-blue-600">{property.price}</span>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <span>{property.beds} beds</span>
-                    <span>{property.baths} baths</span>
-                  </div>
-                </div>
-                <Link href={`/properties/${property.id}`} className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center">
-                  View Details
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Testimonials Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Our East African Users Say</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">Real stories from real people who found their perfect makao through our platform</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Fatuma Ali",
-                role: "Tenant, Nairobi",
-                content: "Makao made finding my first apartment so easy! The search filters were perfect and I found exactly what I was looking for in just a few days.",
-                rating: 5,
-                avatar: "👩‍💼"
-              },
-              {
-                name: "David Mwangi",
-                role: "Property Agent, Dar es Salaam",
-                content: "As an agent, Makao has helped me reach more qualified renters. The platform is professional and the support team is amazing.",
-                rating: 5,
-                avatar: "👨‍💼"
-              },
-              {
-                name: "Grace Nakato",
-                role: "Tenant, Kampala",
-                content: "I love how user-friendly the platform is. The virtual tours saved me so much time and I found my dream home without endless in-person visits.",
-                rating: 5,
-                avatar: "👩‍💻"
-              }
-            ].map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300">
-                <div className="flex items-center mb-4">
-                  <div className="text-3xl mr-3">{testimonial.avatar}</div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 italic">"{testimonial.content}"</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Find Your Perfect Makao?</h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of satisfied East Africans who found their dream rental through Makao. 
-            Start your journey today - it's completely free!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors transform hover:scale-105">
-              Get Started Free
-            </Link>
-            <Link href="/properties" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors transform hover:scale-105">
-              Browse Properties
-            </Link>
-          </div>
-          <div className="mt-8 flex justify-center space-x-8 text-blue-100">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>No Credit Card Required</span>
-            </div>
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>Cancel Anytime</span>
-            </div>
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>24/7 Support</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+    <div className="bg-slate-50 text-slate-800 font-body-md min-h-screen">
+      <main>
+        <HeroSection onSearch={handleSearch} />
+        <MetricsSection />
         
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+        {isLoading ? (
+          <div className="py-24 text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-900 border-t-transparent"></div>
+            <p className="mt-4 text-slate-500">Loading properties...</p>
+          </div>
+        ) : error ? (
+          <div className="py-24 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchFeaturedProperties}
+              className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <FeaturedProperties 
+            properties={searchResults}
+            onViewAllClick={handleViewAllListings}
+            onPropertyClick={handlePropertyClick}
+            onFavoriteClick={handleFavoriteClick}
+          />
+        )}
         
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out forwards;
-        }
+        {/* Call to Action Section */}
+        <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+          <div className="container-responsive text-center">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Ready to Find Your Perfect Home?
+            </h2>
+            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
+              Join thousands of happy tenants who found their dream rental through Makao. 
+              Start your journey today with no commitment.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                href="/properties"
+                className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                Start Searching
+              </Link>
+              <Link
+                href="/agent/properties/new"
+                className="px-8 py-4 bg-transparent text-white border-2 border-white rounded-lg font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                List Your Property
+              </Link>
+            </div>
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="text-3xl font-bold mb-2">10,000+</div>
+                <div className="opacity-90">Active Properties</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold mb-2">5,000+</div>
+                <div className="opacity-90">Happy Tenants</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold mb-2">500+</div>
+                <div className="opacity-90">Verified Agents</div>
+              </div>
+            </div>
+          </div>
+        </section>
         
-        .animate-slide-up {
-          animation: slide-up 1s ease-out forwards;
-        }
-      `}</style>
+        <HowItWorks />
+        <Newsletter onSubscribe={handleNewsletterSubscribe} />
+      </main>
     </div>
   );
 }

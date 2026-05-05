@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import { queryOne } from '@/lib/database-helpers';
 import { comparePassword, generateToken, createAuthCookie } from '@/lib/auth';
 import { z } from 'zod';
 
@@ -14,9 +13,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = loginSchema.parse(body);
 
-    await connectDB();
+    // Get user from database
+    const user = await queryOne(
+      'SELECT id, name, email, password, role, status, email_verified, subscription FROM users WHERE email = $1',
+      [validatedData.email]
+    );
 
-    const user = await User.findOne({ email: validatedData.email });
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.isBanned) {
+    if (user.status === 'banned') {
       return NextResponse.json(
         { error: 'Account has been banned' },
         { status: 403 }
@@ -45,11 +47,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       message: 'Login successful',
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
         subscription: user.subscription,
       },
     });
@@ -72,3 +74,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+export const runtime = 'nodejs';

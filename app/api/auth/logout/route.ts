@@ -9,3 +9,6 @@ export async function POST() {
   response.headers.set('Set-Cookie', clearAuthCookie());
   return response;
 }
+
+
+export const runtime = 'nodejs';

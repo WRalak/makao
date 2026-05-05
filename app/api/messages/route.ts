@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import Message from '@/models/Message';
+import connectDB from '@/lib/database';
 import { verifyToken } from '@/lib/auth';
 import { getSocketService } from '@/lib/socket';
 
@@ -228,3 +227,6 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+
+export const runtime = 'nodejs';

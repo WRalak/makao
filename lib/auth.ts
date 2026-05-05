@@ -1,7 +1,18 @@
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
-import { IUser } from '../models/User';
+
+// Local interface since we're using PostgreSQL instead of MongoDB
+interface IUser {
+  id: number;
+  email: string;
+  role: string;
+  provider?: string;
+  _id?: number;
+  lockUntil?: Date;
+  loginAttempts?: number;
+  save?: (user: IUser) => Promise<void>;
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'fallback-refresh-secret';

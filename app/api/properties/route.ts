@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import Property from '@/models/Property';
-import User from '@/models/User';
+import { query, queryOne, paginate, validateRequired, handleDatabaseError } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 
 // GET - Fetch all approved properties for public browsing
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     const city = searchParams.get('city');
     const minPrice = searchParams.get('minPrice');
@@ -20,47 +16,149 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
-    // Build query
-    const query: any = {
-      isApproved: true,
-      status: 'available',
-    };
+    // Build base query
+    let baseQuery = `
+      SELECT 
+        p.id, p.title, p.description, p.street, p.city, p.state, p.country,
+        p.zip_code, p.latitude, p.longitude, p.bedrooms, p.bathrooms, p.square_feet,
+        p.rent_amount, p.rent_currency, p.security_deposit, p.available_date,
+        p.lease_term, p.images, p.amenities, p.pet_policy, p.furnished,
+        p.parking_spaces, p.parking_type, p.utilities_included, p.utility_costs,
+        p.virtual_tour_url, p.video_tour_url, p.nearby_amenities, p.transport_links,
+        p.walk_score, p.transit_score, p.agent_id, p.space_id, p.status,
+        p.is_featured, p.is_active, p.is_verified, p.view_count, p.message_count,
+        p.save_count, p.application_count, p.tour_count, p.slug, p.meta_title,
+        p.meta_description, p.created_at, p.updated_at,
+        u.name as agent_name, u.email as agent_email, u.phone as agent_phone
+      FROM properties p
+      LEFT JOIN users u ON p.agent_id = u.id
+      WHERE p.is_active = true AND p.status = 'available'
+    `;
 
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM properties p 
+      WHERE p.is_active = true AND p.status = 'available'
+    `;
+
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // Add filters
     if (city) {
-      query['address.city'] = { $regex: city, $options: 'i' };
+      baseQuery += ` AND p.city ILIKE $${paramIndex}`;
+      countQuery += ` AND city ILIKE $${paramIndex}`;
+      params.push(`%${city}%`);
+      paramIndex++;
     }
 
-    if (minPrice || maxPrice) {
-      query.rent = {};
-      if (minPrice) query.rent.$gte = parseInt(minPrice);
-      if (maxPrice) query.rent.$lte = parseInt(maxPrice);
+    if (minPrice) {
+      baseQuery += ` AND p.rent_amount >= $${paramIndex}`;
+      countQuery += ` AND rent_amount >= $${paramIndex}`;
+      params.push(minPrice);
+      paramIndex++;
+    }
+
+    if (maxPrice) {
+      baseQuery += ` AND p.rent_amount <= $${paramIndex}`;
+      countQuery += ` AND rent_amount <= $${paramIndex}`;
+      params.push(maxPrice);
+      paramIndex++;
     }
 
     if (bedrooms && bedrooms !== 'any') {
-      query.bedrooms = parseInt(bedrooms);
+      baseQuery += ` AND p.bedrooms = $${paramIndex}`;
+      countQuery += ` AND bedrooms = $${paramIndex}`;
+      params.push(bedrooms);
+      paramIndex++;
     }
 
     if (bathrooms && bathrooms !== 'any') {
-      query.bathrooms = parseInt(bathrooms);
+      baseQuery += ` AND p.bathrooms = $${paramIndex}`;
+      countQuery += ` AND bathrooms = $${paramIndex}`;
+      params.push(bathrooms);
+      paramIndex++;
     }
 
     if (petsAllowed === 'true') {
-      query['amenities.petsAllowed'] = true;
+      baseQuery += ` AND p.pet_policy = 'allowed'`;
+      countQuery += ` AND pet_policy = 'allowed'`;
     }
 
-    // Get properties with agent details
-    const properties = await Property.find(query)
-      .populate('agentId', 'name email phone')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
+    // Add ordering and pagination
+    baseQuery += ` ORDER BY p.created_at DESC LIMIT ${limit} OFFSET ${(page - 1) * limit}`;
 
-    // Get total count for pagination
-    const total = await Property.countDocuments(query);
+    // Execute queries
+    const [properties, countResult] = await Promise.all([
+      query(baseQuery, params),
+      queryOne<{ total: number }>(countQuery, params.slice(0, -2)) // Remove pagination params for count
+    ]);
+
+    const total = countResult?.total || 0;
+
+    // Transform data to match expected format
+    const transformedProperties = properties.map((prop: any) => ({
+      id: prop.id.toString(),
+      title: prop.title,
+      description: prop.description,
+      address: {
+        street: prop.street,
+        city: prop.city,
+        state: prop.state,
+        country: prop.country,
+        zipCode: prop.zip_code,
+        coordinates: {
+          lat: parseFloat(prop.latitude),
+          lng: parseFloat(prop.longitude)
+        }
+      },
+      rent: parseFloat(prop.rent_amount),
+      rentCurrency: prop.rent_currency,
+      securityDeposit: prop.security_deposit ? parseFloat(prop.security_deposit) : null,
+      bedrooms: prop.bedrooms,
+      bathrooms: prop.bathrooms,
+      squareFeet: prop.square_feet,
+      availableDate: prop.available_date,
+      leaseTerm: prop.lease_term,
+      images: prop.images || [],
+      amenities: prop.amenities || [],
+      petPolicy: prop.pet_policy,
+      furnished: prop.furnished,
+      parkingSpaces: prop.parking_spaces,
+      parkingType: prop.parking_type,
+      utilitiesIncluded: prop.utilities_included || [],
+      utilityCosts: prop.utility_costs ? parseFloat(prop.utility_costs) : 0,
+      virtualTourUrl: prop.virtual_tour_url,
+      videoTourUrl: prop.video_tour_url,
+      nearbyAmenities: prop.nearby_amenities || [],
+      transportLinks: prop.transport_links || [],
+      walkScore: prop.walk_score,
+      transitScore: prop.transit_score,
+      agentId: prop.agent_id?.toString(),
+      spaceId: prop.space_id?.toString(),
+      status: prop.status,
+      featured: prop.is_featured,
+      active: prop.is_active,
+      verified: prop.is_verified,
+      viewCount: prop.view_count,
+      messageCount: prop.message_count,
+      saveCount: prop.save_count,
+      applicationCount: prop.application_count,
+      tourCount: prop.tour_count,
+      slug: prop.slug,
+      metaTitle: prop.meta_title,
+      metaDescription: prop.meta_description,
+      createdAt: prop.created_at,
+      updatedAt: prop.updated_at,
+      agent: prop.agent_name ? {
+        name: prop.agent_name,
+        email: prop.agent_email,
+        phone: prop.agent_phone
+      } : null
+    }));
 
     return NextResponse.json({
-      properties,
+      properties: transformedProperties,
       pagination: {
         page,
         limit,
@@ -71,8 +169,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Failed to fetch properties:', error);
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to fetch properties' },
+      { error: dbError.message },
       { status: 500 }
     );
   }
@@ -86,6 +185,7 @@ const createPropertySchema = z.object({
     city: z.string().min(1, 'City is required'),
     state: z.string().min(1, 'State is required'),
     zipCode: z.string().min(1, 'Zip code is required'),
+    country: z.string().optional(),
     coordinates: z.object({
       lat: z.number(),
       lng: z.number(),
@@ -124,15 +224,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    await connectDB();
+    // Get user from database
+    const user = await queryOne(
+      'SELECT id, role, subscription FROM users WHERE id = $1',
+      [decoded.userId]
+    );
 
-    const user = await User.findById(decoded.userId);
     if (!user || user.role !== 'agent') {
       return NextResponse.json({ error: 'Only agents can create properties' }, { status: 403 });
     }
 
     // Check agent subscription limits
-    if (user.subscription && user.subscription.propertyCount >= user.subscription.propertyLimit) {
+    const agentProperties = await queryOne(
+      'SELECT COUNT(*) as count FROM properties WHERE agent_id = $1',
+      [user.id]
+    );
+
+    if (user.subscription && agentProperties.count >= user.subscription.propertyLimit) {
       return NextResponse.json(
         { error: `You've reached your property limit of ${user.subscription.propertyLimit}` },
         { status: 403 }
@@ -142,23 +250,75 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createPropertySchema.parse(body);
 
-    const property = new Property({
-      ...validatedData,
-      agentId: user._id,
-      availabilityDate: new Date(validatedData.availabilityDate),
-    });
+    // Insert property
+    const insertQuery = `
+      INSERT INTO properties (
+        title, description, street, city, state, country, zip_code,
+        latitude, longitude, bedrooms, bathrooms, square_feet,
+        rent_amount, rent_currency, security_deposit, available_date,
+        lease_term, images, amenities, pet_policy, furnished,
+        parking_spaces, parking_type, utilities_included, utility_costs,
+        agent_id, status, is_featured, is_active, is_verified,
+        created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12,
+        $13, $14, $15, $16,
+        $17, $18, $19, $20, $21,
+        $22, $23, $24, $25,
+        $26, $27, $28, $29, $30,
+        NOW(), NOW()
+      ) RETURNING id
+    `;
 
-    await property.save();
+    const params = [
+      validatedData.title,
+      validatedData.description,
+      validatedData.address.street,
+      validatedData.address.city,
+      validatedData.address.state,
+      validatedData.address.country || 'KE',
+      validatedData.address.zipCode,
+      validatedData.address.coordinates.lat,
+      validatedData.address.coordinates.lng,
+      validatedData.bedrooms,
+      validatedData.bathrooms,
+      validatedData.squareFeet,
+      validatedData.rent,
+      'KES', // Default currency
+      validatedData.securityDeposit,
+      validatedData.availabilityDate,
+      validatedData.leaseTerm,
+      JSON.stringify(validatedData.images),
+      JSON.stringify(Object.keys(validatedData.amenities).filter(key => validatedData.amenities[key as keyof typeof validatedData.amenities])),
+      validatedData.amenities.petsAllowed ? 'allowed' : 'not_allowed',
+      validatedData.amenities.furnished,
+      validatedData.amenities.parking ? 1 : 0,
+      'street', // Default parking type
+      JSON.stringify(Object.keys(validatedData.amenities).filter(key => validatedData.amenities[key as keyof typeof validatedData.amenities] && ['utilitiesIncluded'].includes(key))),
+      0, // Default utility costs
+      user.id,
+      'available',
+      false, // featured
+      true, // active
+      false // verified
+    ];
 
-    // Update agent's property count
-    if (user.subscription) {
-      user.subscription.propertyCount += 1;
-      await user.save();
+    const result = await queryOne<{ id: number }>(insertQuery, params);
+
+    if (!result) {
+      throw new Error('Failed to create property');
     }
+
+    // Get the created property
+    const createdProperty = await queryOne(
+      'SELECT * FROM properties WHERE id = $1',
+      [result.id]
+    );
 
     return NextResponse.json({
       message: 'Property created successfully',
-      property,
+      property: createdProperty,
     }, { status: 201 });
 
   } catch (error) {
@@ -170,9 +330,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Failed to create property:', error);
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to create property' },
+      { error: dbError.message },
       { status: 500 }
     );
   }
 }
+
+
+export const runtime = 'nodejs';

@@ -121,3 +121,6 @@ async function sendVerificationEmail(email: string, token: string) {
   //   `
   // });
 }
+
+
+export const runtime = 'nodejs';

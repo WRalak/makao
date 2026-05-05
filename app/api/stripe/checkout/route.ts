@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import connectDB from '@/lib/database';
 import { createCheckoutSession, createCustomer } from '@/lib/stripe';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
@@ -24,23 +23,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { plan } = checkoutSchema.parse(body);
 
-    await connectDB();
+    const pool = await connectDB();
 
-    const user = await User.findById(decoded.userId);
-    if (!user) {
+    // Query user from PostgreSQL database
+    const userResult = await pool.query(
+      'SELECT id, name, email, stripe_customer_id FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    
+    if (userResult.rows.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    
+    const user = userResult.rows[0];
 
     // Create Stripe customer if doesn't exist
-    let stripeCustomerId = user.stripeCustomerId;
+    let stripeCustomerId = user.stripe_customer_id;
     if (!stripeCustomerId) {
       const customer = await createCustomer(user.email, user.name);
       stripeCustomerId = customer.id;
-      user.stripeCustomerId = stripeCustomerId;
-      await user.save();
+      
+      // Update user with Stripe customer ID
+      await pool.query(
+        'UPDATE users SET stripe_customer_id = $1, updated_at = NOW() WHERE id = $2',
+        [stripeCustomerId, decoded.userId]
+      );
     }
 
-    const session = await createCheckoutSession(stripeCustomerId, plan, user._id.toString());
+    const session = await createCheckoutSession(stripeCustomerId, plan, user.id.toString());
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
 
@@ -59,3 +69,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+export const runtime = 'nodejs';

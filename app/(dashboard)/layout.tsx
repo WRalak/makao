@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactNode } from 'react';
 import { Home, Users, Building, MessageSquare, Settings, LogOut, Menu, X, TrendingUp, Calendar, FileText } from 'lucide-react';
 import Link from 'next/link';

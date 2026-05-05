@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
-import Property from '@/models/Property';
-import Message from '@/models/Message';
+import { query, queryOne } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -17,9 +14,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Agent access required' }, { status: 403 });
     }
 
-    await connectDB();
+    // Get agent from database
+    const agent = await queryOne(
+      'SELECT id, name, email, subscription FROM users WHERE id = $1 AND role = $2',
+      [decoded.userId, 'agent']
+    );
 
-    const agent = await User.findById(decoded.userId);
     if (!agent) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
@@ -35,66 +35,65 @@ export async function GET(request: NextRequest) {
     }
 
     // Get agent's properties
-    const properties = await Property.find({ agentId: agent._id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const properties = await query(
+      'SELECT id, title, street, city, state, status, view_count, message_count, images, created_at FROM properties WHERE agent_id = $1 ORDER BY created_at DESC',
+      [agent.id]
+    );
 
     // Calculate stats
     const totalProperties = properties.length;
-    const activeProperties = properties.filter(p => p.status === 'available').length;
-    const totalViews = properties.reduce((sum, p) => sum + (p.views || 0), 0);
-    const totalMessages = properties.reduce((sum, p) => sum + (p.messagesCount || 0), 0);
+    const activeProperties = properties.filter((p: any) => p.status === 'available').length;
+    const totalViews = properties.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0);
+    const totalMessages = properties.reduce((sum: number, p: any) => sum + (p.message_count || 0), 0);
 
     // Get recent properties (last 5)
-    const recentProperties = properties.slice(0, 5).map(property => ({
-      _id: property._id,
+    const recentProperties = properties.slice(0, 5).map((property: any) => ({
+      _id: property.id,
       title: property.title,
-      address: property.address,
+      address: {
+        street: property.street,
+        city: property.city,
+        state: property.state
+      },
       status: property.status,
-      views: property.views,
-      messagesCount: property.messagesCount,
+      views: property.view_count,
+      messagesCount: property.message_count,
       images: property.images,
-      createdAt: property.createdAt,
+      createdAt: property.created_at,
     }));
 
     // Get top performing properties (by views)
     const topProperties = properties
-      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
       .slice(0, 3)
-      .map(property => ({
-        _id: property._id,
+      .map((property: any) => ({
+        _id: property.id,
         title: property.title,
-        views: property.views,
-        messagesCount: property.messagesCount,
-        address: property.address,
+        views: property.view_count,
+        messagesCount: property.message_count,
+        address: {
+          street: property.street,
+          city: property.city,
+          state: property.state
+        },
       }));
 
     // Get monthly views data (last 6 months)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const monthlyViews = await Property.aggregate([
-      {
-        $match: {
-          agentId: agent._id,
-          createdAt: { $gte: sixMonthsAgo }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
-          },
-          views: { $sum: '$views' },
-          messages: { $sum: '$messagesCount' },
-          properties: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1 }
-      }
-    ]);
+    const monthlyViews = await query(`
+      SELECT 
+        EXTRACT(YEAR FROM created_at) as year,
+        EXTRACT(MONTH FROM created_at) as month,
+        SUM(view_count) as views,
+        SUM(message_count) as messages,
+        COUNT(*) as properties
+      FROM properties 
+      WHERE agent_id = $1 AND created_at >= $2
+      GROUP BY year, month
+      ORDER BY year, month
+    `, [agent.id, sixMonthsAgo]);
 
     return NextResponse.json({
       totalProperties,
@@ -117,3 +116,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
+export const runtime = 'nodejs';

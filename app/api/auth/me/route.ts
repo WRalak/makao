@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import { queryOne } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -22,10 +21,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await connectDB();
+    // Get user from database
+    const user = await queryOne(
+      'SELECT id, name, email, role, avatar_url, phone, email_verified, subscription, status FROM users WHERE id = $1',
+      [decoded.userId]
+    );
 
-    const user = await User.findById(decoded.userId).select('-password');
-    if (!user || user.isBanned) {
+    if (!user || user.status === 'banned') {
       return NextResponse.json(
         { error: 'User not found or banned' },
         { status: 404 }
@@ -34,16 +36,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar,
+        avatar: user.avatar_url,
         phone: user.phone,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
         subscription: user.subscription,
-        isActive: user.isActive,
-        isBanned: user.isBanned,
+        isActive: user.status === 'active',
+        isBanned: user.status === 'banned',
       },
     });
 
@@ -55,3 +57,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+
+export const runtime = 'nodejs';

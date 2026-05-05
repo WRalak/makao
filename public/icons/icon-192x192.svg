@@ -1,0 +1,20 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="192" height="192" rx="24" fill="#1f2937"/>
+  
+  <!-- House Icon -->
+  <g transform="translate(48, 48)">
+    <!-- Roof -->
+    <path d="M48 20L96 0L144 20H48Z" fill="#f59e0b"/>
+    <!-- House Body -->
+    <rect x="12" y="20" width="72" height="48" fill="#e5e7eb"/>
+    <!-- Door -->
+    <rect x="36" y="48" width="24" height="20" fill="#9ca3af"/>
+    <!-- Windows -->
+    <rect x="16" y="28" width="16" height="16" fill="#60a5fa"/>
+    <rect x="64" y="28" width="16" height="16" fill="#60a5fa"/>
+  </g>
+  
+  <!-- Makao Text -->
+  <text x="96" y="164" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">MAKAO</text>
+</svg>
