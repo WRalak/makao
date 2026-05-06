@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import { Heart, Bed, Bath, MapPin, Home, Star } from 'lucide-react';
 
@@ -237,4 +237,4 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   );
 };
 
-export default PropertyCard;
+export default memo(PropertyCard);

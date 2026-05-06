@@ -50,7 +50,7 @@ const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
       setProperties(data.properties || []);
     } catch (error) {
       console.error('Error fetching featured properties:', error);
-      setError('Failed to load properties');
+      setError('Unable to connect to property listings. Please check your internet connection.');
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +164,7 @@ const FeaturedProperties: React.FC<FeaturedPropertiesProps> = ({
       <section className="py-16 sm:py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 text-center">
           <h2 className="font-headline-lg text-headline-lg text-slate-800 mb-4">{title}</h2>
-          <p className="text-slate-500 mb-8">No featured properties available at the moment.</p>
+          <p className="text-slate-500 mb-8">No featured properties available right now. Check back soon for new listings!</p>
           <Link 
             href="/properties"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors"

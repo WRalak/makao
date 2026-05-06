@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -123,7 +123,7 @@ export default function PropertiesPage() {
     fetchProperties();
   }, [searchParams]);
 
-  const fetchProperties = async (page = 1) => {
+  const fetchProperties = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -156,7 +156,7 @@ export default function PropertiesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters]);
 
   const handleFilterChange = (newFilters: PropertyFilters) => {
     setFilters(newFilters);

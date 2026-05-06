@@ -12,6 +12,8 @@ interface FooterSection {
 }
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+  
   const footerSections: FooterSection[] = [
     {
       title: "Company",
@@ -60,10 +62,10 @@ export default function Footer() {
           <div className="col-span-1">
             <div className="flex items-center mb-4">
               <Home className="h-6 w-6 text-blue-400" />
-              <span className="ml-2 text-lg font-bold">PropRent</span>
+              <span className="ml-2 text-lg font-bold">Makao</span>
             </div>
             <p className="font-body-sm text-slate-500 mb-6 leading-relaxed">
-              Redefining the East African rental market with transparency, technology, and superior service for tenants and agents alike.
+              East Africa's premier rental platform. Find your perfect home or list your property with confidence and ease.
             </p>
             <div className="flex gap-4">
               <span className="material-symbols-outlined cursor-pointer text-slate-400 hover:text-blue-900 transition-colors">
@@ -103,7 +105,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="font-body-sm text-slate-400 text-center sm:text-left">
-            © 2024 PropRent. All rights reserved. Licensed Real Estate Brokerage - East Africa.
+            © {currentYear} Makao. All rights reserved. East Africa's Premier Rental Platform.
           </p>
           <div className="flex gap-6">
             <a href="#" className="font-body-sm text-slate-400 hover:text-blue-900 transition-colors">

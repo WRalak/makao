@@ -1,49 +1,178 @@
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@300;400;500;600;700;900&display=swap');
+
 @layer base {
   * {
-    @apply border-gray-200;
+    border-color: rgb(229 231 235);
   }
   body {
-    @apply bg-white text-gray-900;
+    background-color: white;
+    color: rgb(17 24 39);
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 146%;
+    letter-spacing: 0%;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 transition-colors;
+    background-color: rgb(37 99 235);
+    color: white;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 146%;
+    letter-spacing: 0%;
+    transition: background-color 0.2s;
+  }
+  .btn-primary:hover {
+    background-color: rgb(29 78 216);
   }
   
   .btn-secondary {
-    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 transition-colors;
+    background-color: rgb(229 231 235);
+    color: rgb(17 24 39);
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 146%;
+    letter-spacing: 0%;
+    transition: background-color 0.2s;
+  }
+  .btn-secondary:hover {
+    background-color: rgb(209 213 219);
   }
   
   .btn-destructive {
-    @apply bg-red-600 text-white hover:bg-red-700 transition-colors;
+    background-color: rgb(220 38 38);
+    color: white;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 146%;
+    letter-spacing: 0%;
+    transition: background-color 0.2s;
+  }
+  .btn-destructive:hover {
+    background-color: rgb(185 28 28);
   }
   
   .input {
-    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors;
+    display: flex;
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid rgb(209 213 219);
+    background-color: white;
+    padding: 0.5rem 0.75rem;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 146%;
+    letter-spacing: 0%;
+    color: rgb(107 114 128);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .input:focus {
+    border-color: rgb(59 130 246);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  .input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
   
   .card {
-    @apply rounded-lg border border-gray-200 bg-white text-gray-900 shadow-sm;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(229 231 235);
+    background-color: white;
+    color: rgb(17 24 39);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
   .container-responsive {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-responsive {
+      padding: 0 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-responsive {
+      padding: 0 2rem;
+    }
   }
   
   .grid-responsive {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1rem;
+  }
+  @media (min-width: 640px) {
+    .grid-responsive {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  @media (min-width: 1280px) {
+    .grid-responsive {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
   
   .text-responsive {
-    @apply text-sm sm:text-base lg:text-lg;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 12px;
+    line-height: 146%;
+    letter-spacing: 0%;
+  }
+  @media (min-width: 640px) {
+    .text-responsive {
+      font-size: 14px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .text-responsive {
+      font-size: 14px;
+    }
   }
   
   .heading-responsive {
-    @apply text-2xl sm:text-3xl lg:text-4xl;
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 16px;
+    line-height: 146%;
+    letter-spacing: 0%;
+  }
+  @media (min-width: 640px) {
+    .heading-responsive {
+      font-size: 18px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .heading-responsive {
+      font-size: 20px;
+    }
   }
 }
 

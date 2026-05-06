@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 import { queryOne } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 

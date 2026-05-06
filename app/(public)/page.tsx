@@ -251,7 +251,7 @@ export default function HomePage() {
       setSearchResults(convertedProperties);
     } catch (err) {
       console.error('Error fetching properties:', err);
-      setError('Failed to load properties. Showing sample data.');
+      setError('Unable to load properties. Showing featured listings for now.');
       // Use sample data as fallback
       setFeaturedProperties(sampleProperties);
       setSearchResults(sampleProperties);
@@ -293,7 +293,7 @@ export default function HomePage() {
       setSearchResults(convertedProperties);
     } catch (err) {
       console.error('Search error:', err);
-      setError('Search failed. Showing featured properties.');
+      setError('Search temporarily unavailable. Showing featured properties.');
       // Fallback to featured properties
       setSearchResults(featuredProperties);
     } finally {
@@ -340,9 +340,9 @@ export default function HomePage() {
       
       if (!response.ok) {
         if (response.status === 409) {
-          throw new Error('Email already subscribed');
+          throw new Error('You\'re already subscribed to our newsletter!');
         }
-        throw new Error(data.error || 'Subscription failed');
+        throw new Error(data.error || 'Unable to subscribe. Please try again later.');
       }
       
       console.log('Newsletter subscription successful:', data);
@@ -366,12 +366,15 @@ export default function HomePage() {
           </div>
         ) : error ? (
           <div className="py-24 text-center">
-            <p className="text-red-600 mb-4">{error}</p>
+            <div className="mb-6">
+              <span className="material-symbols-outlined text-amber-500 text-4xl">info</span>
+            </div>
+            <p className="text-slate-600 mb-4 max-w-md mx-auto">{error}</p>
             <button
               onClick={fetchFeaturedProperties}
-              className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
+              className="px-6 py-3 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
             >
-              Retry
+              Refresh Properties
             </button>
           </div>
         ) : (
@@ -387,30 +390,30 @@ export default function HomePage() {
         <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
           <div className="container-responsive text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Find Your Perfect Home?
+              Your East African Rental Journey Starts Here
             </h2>
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-              Join thousands of happy tenants who found their dream rental through Makao. 
-              Start your journey today with no commitment.
+              Discover verified rental properties across Kenya, Rwanda, Tanzania, and beyond. 
+              From city apartments to suburban family homes - find your perfect space today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href="/properties"
                 className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg"
               >
-                Start Searching
+                Browse Properties
               </Link>
               <Link
                 href="/agent/properties/new"
                 className="px-8 py-4 bg-transparent text-white border-2 border-white rounded-lg font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors"
               >
-                List Your Property
+                List Your Rental
               </Link>
             </div>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">10,000+</div>
-                <div className="opacity-90">Active Properties</div>
+                <div className="opacity-90">Verified Rental Properties</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">5,000+</div>
@@ -418,7 +421,7 @@ export default function HomePage() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">500+</div>
-                <div className="opacity-90">Verified Agents</div>
+                <div className="opacity-90">Trusted Landlords</div>
               </div>
             </div>
           </div>

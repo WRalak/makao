@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 import { query, queryOne, paginate } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+
+// Simple in-memory cache for agents (5 minute TTL)
+const agentsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const agentsQuerySchema = z.object({
   search: z.string().optional(),
@@ -21,6 +28,15 @@ export async function GET(request: NextRequest) {
     const page = parseInt(validatedData.page || '1');
     const limit = parseInt(validatedData.limit || '12');
     const offset = (page - 1) * limit;
+
+    // Create cache key
+    const cacheKey = JSON.stringify({ ...validatedData, page, limit });
+    
+    // Check cache first
+    const cached = agentsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json(cached.data);
+    }
 
     // Try database first, but fall back to dummy data if connection fails
     try {
@@ -102,15 +118,23 @@ export async function GET(request: NextRequest) {
         }
       }));
 
-      return NextResponse.json({
+      const response = {
         agents: transformedAgents,
         pagination: {
           page,
           limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
+          total: total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+
+      // Store in cache
+      agentsCache.set(cacheKey, {
+        data: response,
+        timestamp: Date.now()
       });
+
+      return NextResponse.json(response);
     } catch (dbError) {
       console.log('Database connection failed, using dummy data:', dbError);
       
@@ -275,7 +299,7 @@ function getDummyAgents(validatedData: any, page: number, limit: number) {
 
   if (validatedData.city) {
     filteredAgents = filteredAgents.filter(agent => 
-      agent.city.toLowerCase().includes(validatedData.city.toLowerCase())
+      agent.address.city.toLowerCase().includes(validatedData.city.toLowerCase())
     );
   }
 

@@ -83,18 +83,21 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
       <div className="absolute inset-0 z-0">
         <img 
           className="w-full h-full object-cover brightness-[0.7]" 
-          alt="Aerial view of Nairobi skyline with modern buildings and green spaces" 
-          src="https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1600"
+          alt="Beautiful modern living room with natural light and comfortable furniture" 
+          src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1600&auto=format&fit=crop&q=80"
         />
+        {/* Overlay gradient for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-7xl px-4 sm:px-8 text-center">
-        <h1 className="font-display-xl text-display-xl text-white mb-6">
-          Find Your Next Home Across East Africa
+        <h1 className="font-display-xl text-display-xl text-white mb-8 text-5xl md:text-6xl">
+          Find Your Perfect Home with Makao
         </h1>
-        <p className="font-body-lg text-body-lg text-white/90 mb-12 max-w-2xl mx-auto">
-          Discover a seamless rental experience with curated listings in Nairobi, Kigali, Dar es Salaam, and beyond.
+        <p className="font-body-lg text-body-lg text-white/90 mb-12 max-w-3xl mx-auto text-lg md:text-xl">
+          East Africa's premier rental platform. Discover verified properties in Nairobi, Kigali, Dar es Salaam, and beyond. 
+          From studio apartments to luxury villas - your dream rental property awaits on Makao.
         </p>
 
         {/* Search Bar */}
@@ -104,7 +107,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
             <MapPin className="w-5 h-5 text-outline" />
             <input 
               className="w-full border-none focus:ring-0 text-on-surface font-body-md placeholder:text-outline outline-none" 
-              placeholder="Where would you like to live? (e.g., Nairobi, Kigali, Dar es Salaam)" 
+              placeholder="Enter city, neighborhood, or property name..." 
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -124,12 +127,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
               onChange={(e) => setPropertyType(e.target.value)}
               disabled={isLoading}
             >
-              <option value="">Property Type</option>
-              <option value="apartment">Apartment</option>
-              <option value="house">House</option>
-              <option value="condo">Condo</option>
-              <option value="villa">Villa</option>
-              <option value="studio">Studio</option>
+              <option value="">All Property Types</option>
+              <option value="apartment">Apartments</option>
+              <option value="house">Houses & Bungalows</option>
+              <option value="condo">Condominiums</option>
+              <option value="villa">Villas & Townhouses</option>
+              <option value="studio">Studio Apartments</option>
+              <option value="penthouse">Penthouses</option>
             </select>
           </div>
           
@@ -144,11 +148,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
               onChange={(e) => setPriceRange(e.target.value)}
               disabled={isLoading}
             >
-              <option value="">Price Range (KES)</option>
-              <option value="20k-50k">KES 20,000 - 50,000</option>
-              <option value="50k-100k">KES 50,000 - 100,000</option>
-              <option value="100k-200k">KES 100,000 - 200,000</option>
-              <option value="200k+">KES 200,000+</option>
+              <option value="">Monthly Rent (KES)</option>
+              <option value="20k-50k">KES 20K - 50K</option>
+              <option value="50k-100k">KES 50K - 100K</option>
+              <option value="100k-200k">KES 100K - 200K</option>
+              <option value="200k+">KES 200K+</option>
             </select>
           </div>
           
@@ -156,17 +160,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
           <button 
             onClick={handleSearch}
             disabled={isLoading || !location.trim()}
-            className="w-full md:w-auto px-10 py-4 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full md:w-auto px-12 py-4 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-lg font-bold hover:shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
           >
             {isLoading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Searching...
+                Searching Makao...
               </>
             ) : (
               <>
-                <Search className="w-5 h-5" />
-                Search
+                <Search className="w-6 h-6" />
+                Search Properties
               </>
             )}
           </button>
@@ -174,7 +178,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, onSignInClick, onLi
 
         {/* Quick Search Tags */}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {['Nairobi', 'Kigali', 'Dar es Salaam', 'Mombasa', 'Apartments', 'Houses'].map((tag) => (
+          {['Nairobi Westlands', 'Kigali Kacyiru', 'Dar es Salaam Masaki', 'Mombasa Nyali', 'Luxury Villas', 'Family Homes'].map((tag) => (
             <button
               key={tag}
               onClick={() => setLocation(tag)}
