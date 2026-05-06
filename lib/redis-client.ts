@@ -1,11 +1,21 @@
 import Redis from 'ioredis';
 
+// Validate required Redis environment variables
+const redisHost = process.env.REDIS_HOST;
+const redisPort = process.env.REDIS_PORT;
+const redisPassword = process.env.REDIS_PASSWORD;
+const redisDb = process.env.REDIS_DB;
+
+if (!redisHost) {
+  throw new Error('REDIS_HOST environment variable is required');
+}
+
 // Redis configuration for production
 const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_DB || '0'),
+  host: redisHost,
+  port: parseInt(redisPort || '6379'),
+  password: redisPassword,
+  db: parseInt(redisDb || '0'),
   
   // Connection settings
   maxRetriesPerRequest: 3,

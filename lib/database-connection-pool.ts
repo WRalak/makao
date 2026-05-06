@@ -1,5 +1,10 @@
 import { Pool, PoolConfig } from 'pg';
 
+// Validate required environment variables
+if (!process.env.DB_PASSWORD) {
+  throw new Error('DB_PASSWORD environment variable is required');
+}
+
 // Production-ready database connection pool configuration
 const poolConfig: PoolConfig = {
   // Connection settings
@@ -7,7 +12,7 @@ const poolConfig: PoolConfig = {
   port: parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME || 'makao',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD,
   
   // Pool settings for high traffic
   max: 20, // Maximum number of connections in pool
