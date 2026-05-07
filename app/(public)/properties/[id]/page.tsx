@@ -91,7 +91,7 @@ interface Question {
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);

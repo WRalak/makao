@@ -1,9 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret-key-2025-makao';
 
 // Simple user interface for middleware
 interface DecodedUser {

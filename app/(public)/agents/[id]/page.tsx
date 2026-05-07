@@ -77,10 +77,10 @@ export default function AgentProfilePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (params.id) {
+    if (params?.id) {
       fetchAgentData(params.id as string);
     }
-  }, [params.id]);
+  }, [params?.id]);
 
   const fetchAgentData = async (agentId: string) => {
     try {

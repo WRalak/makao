@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
 import Property from '@/models/Property';
 import User from '@/models/User';
 
@@ -9,8 +8,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
-
     const property = await Property.findById(params.id)
       .populate('agentId', 'name email phone')
       .lean();

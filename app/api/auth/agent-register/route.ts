@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/database';
+import { queryOne, insert } from '@/lib/database-helpers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -47,24 +47,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = agentRegistrationSchema.parse(body);
 
-    let pool;
-    try {
-      pool = await connectDB();
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      return NextResponse.json(
-        { error: 'Database connection failed. Please try again later.' },
-        { status: 500 }
-      );
-    }
-
     // Check if user already exists
-    const existingUserResult = await pool.query(
+    const existingUser = await queryOne(
       'SELECT id FROM users WHERE email = $1 OR phone = $2 OR mpesa_number = $3',
       [validatedData.email, validatedData.phone, validatedData.mpesaNumber]
     );
 
-    if (existingUserResult.rows.length > 0) {
+    if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email, phone, or M-PESA number already exists' },
         { status: 400 }
@@ -82,8 +71,8 @@ export async function POST(request: NextRequest) {
     const emailToken = crypto.randomBytes(32).toString('hex');
 
     // Create agent user (pending verification)
-    const insertQuery = `
-      INSERT INTO users (
+    const result = await insert(
+      `INSERT INTO users (
         name, email, password, role, phone, mpesa_number, company_name,
         registration_number, experience_years, license_number, id_number,
         email_verified, phone_verified, otp_code, otp_expires, email_token,
@@ -91,30 +80,30 @@ export async function POST(request: NextRequest) {
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
         $8, $9, $10, $11,
-        false, false, $12, $13, $14,
+        $12, $13, $14, $15, $16,
         false, false, NOW(), NOW()
       )
-      RETURNING id, email_token
-    `;
+      RETURNING id, email_token`,
+      [
+        validatedData.fullName,
+        validatedData.email,
+        hashedPassword,
+        'agent',
+        validatedData.phone,
+        validatedData.mpesaNumber,
+        validatedData.companyName,
+        validatedData.registrationNumber || null,
+        parseInt(validatedData.experience.split('-')[1]) || 0,
+        validatedData.licenseNumber,
+        validatedData.idNumber,
+        false, // email_verified
+        false, // phone_verified
+        otpCode,
+        otpExpires.toISOString(),
+        emailToken
+      ]
+    );
 
-    const values = [
-      validatedData.fullName,
-      validatedData.email,
-      hashedPassword,
-      'agent',
-      validatedData.phone,
-      validatedData.mpesaNumber,
-      validatedData.companyName,
-      validatedData.registrationNumber || null,
-      parseInt(validatedData.experience.split('-')[1]) || 0,
-      validatedData.licenseNumber,
-      validatedData.idNumber,
-      otpCode,
-      otpExpires.toISOString(),
-      emailToken
-    ];
-
-    const result = await pool.query(insertQuery, values);
     const user = result.rows[0];
 
     // TODO: Send OTP via SMS service

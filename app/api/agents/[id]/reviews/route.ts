@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-
 // GET - Fetch agent reviews
 export async function GET(
   request: NextRequest,
@@ -12,8 +10,6 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
-
-    await connectDB();
 
     // Mock reviews data for now (replace with actual database queries)
     const mockReviews = [
@@ -130,8 +126,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    await connectDB();
 
     // TODO: Save review to database
     // For now, just return success

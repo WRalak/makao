@@ -21,24 +21,19 @@ export async function GET(request: NextRequest) {
       SELECT 
         p.id, p.title, p.description, p.street, p.city, p.state, p.country,
         p.zip_code, p.latitude, p.longitude, p.bedrooms, p.bathrooms, p.square_feet,
-        p.rent_amount, p.rent_currency, p.security_deposit, p.available_date,
-        p.lease_term, p.images, p.amenities, p.pet_policy, p.furnished,
-        p.parking_spaces, p.parking_type, p.utilities_included, p.utility_costs,
-        p.virtual_tour_url, p.video_tour_url, p.nearby_amenities, p.transport_links,
-        p.walk_score, p.transit_score, p.agent_id, p.space_id, p.status,
-        p.is_featured, p.is_active, p.is_verified, p.view_count, p.message_count,
-        p.save_count, p.application_count, p.tour_count, p.slug, p.meta_title,
-        p.meta_description, p.created_at, p.updated_at,
+        p.rent, p.rent_currency, p.security_deposit, p.available_date,
+        p.images, p.amenities, p.pet_policy, p.status, p.featured, p.is_approved, 
+        p.views, p.messages_count, p.created_at, p.updated_at,
         u.name as agent_name, u.email as agent_email, u.phone as agent_phone
       FROM properties p
       LEFT JOIN users u ON p.agent_id = u.id
-      WHERE p.is_active = true AND p.status = 'available'
+      WHERE p.status = 'available' AND p.is_approved = true
     `;
 
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM properties p 
-      WHERE p.is_active = true AND p.status = 'available'
+      WHERE p.status = 'available' AND p.is_approved = true
     `;
 
     const params: any[] = [];
@@ -53,15 +48,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (minPrice) {
-      baseQuery += ` AND p.rent_amount >= $${paramIndex}`;
-      countQuery += ` AND rent_amount >= $${paramIndex}`;
+      baseQuery += ` AND p.rent >= $${paramIndex}`;
+      countQuery += ` AND rent >= $${paramIndex}`;
       params.push(minPrice);
       paramIndex++;
     }
 
     if (maxPrice) {
-      baseQuery += ` AND p.rent_amount <= $${paramIndex}`;
-      countQuery += ` AND rent_amount <= $${paramIndex}`;
+      baseQuery += ` AND p.rent <= $${paramIndex}`;
+      countQuery += ` AND rent <= $${paramIndex}`;
       params.push(maxPrice);
       paramIndex++;
     }
@@ -112,49 +107,29 @@ export async function GET(request: NextRequest) {
           lng: parseFloat(prop.longitude)
         }
       },
-      rent: parseFloat(prop.rent_amount),
+      rent: parseFloat(prop.rent),
       rentCurrency: prop.rent_currency,
       securityDeposit: prop.security_deposit ? parseFloat(prop.security_deposit) : null,
       bedrooms: prop.bedrooms,
       bathrooms: prop.bathrooms,
       squareFeet: prop.square_feet,
       availableDate: prop.available_date,
-      leaseTerm: prop.lease_term,
       images: prop.images || [],
       amenities: prop.amenities || [],
       petPolicy: prop.pet_policy,
-      furnished: prop.furnished,
-      parkingSpaces: prop.parking_spaces,
-      parkingType: prop.parking_type,
-      utilitiesIncluded: prop.utilities_included || [],
-      utilityCosts: prop.utility_costs ? parseFloat(prop.utility_costs) : 0,
-      virtualTourUrl: prop.virtual_tour_url,
-      videoTourUrl: prop.video_tour_url,
-      nearbyAmenities: prop.nearby_amenities || [],
-      transportLinks: prop.transport_links || [],
-      walkScore: prop.walk_score,
-      transitScore: prop.transit_score,
-      agentId: prop.agent_id?.toString(),
-      spaceId: prop.space_id?.toString(),
-      status: prop.status,
-      featured: prop.is_featured,
-      active: prop.is_active,
-      verified: prop.is_verified,
-      viewCount: prop.view_count,
-      messageCount: prop.message_count,
-      saveCount: prop.save_count,
-      applicationCount: prop.application_count,
-      tourCount: prop.tour_count,
-      slug: prop.slug,
-      metaTitle: prop.meta_title,
-      metaDescription: prop.meta_description,
-      createdAt: prop.created_at,
-      updatedAt: prop.updated_at,
-      agent: prop.agent_name ? {
+      agent: {
+        id: prop.agent_id?.toString(),
         name: prop.agent_name,
         email: prop.agent_email,
         phone: prop.agent_phone
-      } : null
+      },
+      status: prop.status,
+      featured: prop.featured,
+      approved: prop.is_approved,
+      views: prop.views,
+      messageCount: prop.messages_count,
+      createdAt: prop.created_at,
+      updatedAt: prop.updated_at
     }));
 
     return NextResponse.json({

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
 
 // GET - Fetch individual agent details
 export async function GET(
@@ -10,26 +8,16 @@ export async function GET(
   try {
     const { id } = params;
 
-    await connectDB();
-
-    const agent = await User.findOne({ 
-      _id: id, 
-      role: 'agent', 
-      isActive: true, 
-      isBanned: false 
-    }).select('-password');
-
-    if (!agent) {
-      return NextResponse.json(
-        { error: 'Agent not found' },
-        { status: 404 }
-      );
-    }
-
-    // Transform agent data with mock additional fields
-    const transformedAgent = {
-      ...agent.toObject(),
-      bio: `Experienced real estate agent specializing in residential properties. With over ${Math.floor(Math.random() * 15) + 1} years of experience, I'm committed to providing exceptional service and finding the perfect home for every client. My expertise includes apartments, houses, and condos in the ${agent.email.includes('gmail') ? 'Manhattan' : 'Brooklyn'} area.`,
+    // Mock agent data for now (database connection disabled)
+    const mockAgent = {
+      id,
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      phone: '+254 712 345 678',
+      role: 'agent',
+      isActive: true,
+      isBanned: false,
+      bio: `Experienced real estate agent specializing in residential properties. With over ${Math.floor(Math.random() * 15) + 1} years of experience, I'm committed to providing exceptional service and finding the perfect home for every client. My expertise includes apartments, houses, and condos in the ${id.includes('1') ? 'Manhattan' : 'Brooklyn'} area.`,
       responseTime: '< 2 hours',
       responseRate: 95 + Math.floor(Math.random() * 5),
       totalListings: Math.floor(Math.random() * 50) + 10,

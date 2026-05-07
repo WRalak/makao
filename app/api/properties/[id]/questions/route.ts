@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
 import Property from '@/models/Property';
 import { verifyToken } from '@/lib/auth';
 
@@ -9,8 +8,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
-    
     const property = await Property.findById(params.id);
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
@@ -66,8 +63,6 @@ export async function POST(
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
 
-    await connectDB();
-    
     const property = await Property.findById(params.id);
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });

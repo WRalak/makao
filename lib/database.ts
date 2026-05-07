@@ -1,11 +1,8 @@
 import { Pool } from 'pg';
 
-// Database connection string
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error('DATABASE_URL not set in environment. Please create a .env.local file with your database connection string.');
-  console.log('Example: DATABASE_URL=postgresql://username:password@host:port/database');
+// Function to get current DATABASE_URL
+function getDatabaseUrl() {
+  return process.env.DATABASE_URL;
 }
 
 declare global {
@@ -15,7 +12,7 @@ declare global {
 // Create or reuse global pool instance
 const globalPool = global.pool || (() => {
   // Read DATABASE_URL dynamically to avoid Next.js loading order issues
-  const dbUrl = process.env.DATABASE_URL;
+  const dbUrl = getDatabaseUrl();
   
   if (!dbUrl) {
     console.warn('No DATABASE_URL provided. Database features will be disabled.');
@@ -52,7 +49,7 @@ async function getDatabase() {
   // If pool doesn't exist, try to create it again
   if (!global.pool) {
     console.warn('Global pool not found, attempting to recreate...');
-    const dbUrl = process.env.DATABASE_URL;
+    const dbUrl = getDatabaseUrl();
     
     if (!dbUrl) {
       throw new Error('DATABASE_URL not set in environment variables.');

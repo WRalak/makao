@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, Mail, Lock, User, Eye, EyeOff, Users, Building } from 'lucide-react';
+import { useAuthStore } from '@/stores';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -16,18 +17,19 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const router = useRouter();
+  const { login, setLoading, isLoading } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      setIsLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -49,11 +51,14 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Login user using Zustand store
+        login(data.user, data.token);
+        
         // Redirect based on user role
         if (data.user.role === 'agent') {
-          router.push('/agent/subscription');
+          router.push('/agent');
         } else {
-          router.push('/tenant/dashboard');
+          router.push('/tenant');
         }
       } else {
         setError(data.error || 'Registration failed');
@@ -61,7 +66,7 @@ export default function RegisterPage() {
     } catch (error) {
       setError('An error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 

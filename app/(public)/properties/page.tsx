@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -83,7 +83,7 @@ interface Agent {
   createdAt: string;
 }
 
-export default function PropertiesPage() {
+function PropertiesPageComponent() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -393,5 +393,13 @@ export default function PropertiesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={<div>Loading properties...</div>}>
+      <PropertiesPageComponent />
+    </Suspense>
   );
 }

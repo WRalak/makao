@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import { queryOne, insert } from '@/lib/database-helpers';
 import { hashPassword, generateToken, createAuthCookie } from '@/lib/auth';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -21,52 +20,68 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = registerSchema.parse(body);
 
-    await connectDB();
-
-    const existingUser = await User.findOne({ email: validatedData.email });
+    // Check if user already exists
+    const existingUser = await queryOne(
+      'SELECT id FROM users WHERE email = $1',
+      [validatedData.email]
+    );
+    
     if (existingUser) {
-      if (existingUser.provider === validatedData.provider && existingUser.providerId === validatedData.providerId) {
-        return NextResponse.json(
-          { error: 'Account already exists with this provider' },
-          { status: 400 }
-        );
-      }
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 400 }
       );
     }
 
+    // Hash password
+    const hashedPassword = await hashPassword(validatedData.password);
+
     // Generate email verification token for email registrations
     const emailVerificationToken = validatedData.provider === 'email' 
       ? crypto.randomBytes(32).toString('hex') 
       : null;
-    
-    const emailVerificationExpires = validatedData.provider === 'email'
-      ? new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-      : null;
 
-    const hashedPassword = validatedData.provider === 'email' 
-      ? await hashPassword(validatedData.password)
-      : '';
+    // Create user
+    const result = await insert(
+      `INSERT INTO users (name, email, password, role, phone, provider, provider_id, is_active, is_banned, email_verified, email_verification_token, email_verification_expires, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+       RETURNING id, name, email, role, is_active, email_verified`,
+      [
+        validatedData.name,
+        validatedData.email,
+        hashedPassword,
+        validatedData.role,
+        validatedData.phone,
+        validatedData.provider,
+        validatedData.providerId,
+        true,
+        false,
+        validatedData.provider !== 'email', // Auto-verify social logins
+        emailVerificationToken,
+        validatedData.provider === 'email' ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null, // 24 hours
+        new Date(),
+        new Date()
+      ]
+    );
 
-    const user = new User({
-      ...validatedData,
-      password: hashedPassword,
-      emailVerificationToken,
-      emailVerificationExpires,
-      emailVerified: validatedData.provider !== 'email', // Auto-verify social logins
-      isActive: true,
-    });
-
-    await user.save();
+    const user = result.rows[0];
 
     // Send email verification for email registrations
-    if (validatedData.provider === 'email') {
-      await sendVerificationEmail(user.email, emailVerificationToken!);
+    if (validatedData.provider === 'email' && emailVerificationToken) {
+      // TODO: Implement actual email sending
+      console.log('Email verification URL:', `${process.env.NEXTAUTH_URL}/verify-email?token=${emailVerificationToken}`);
     }
 
-    const token = generateToken(user);
+    // Create user object compatible with generateToken
+    const userForToken = {
+      id: user.id,
+      _id: user.id, // Map id to _id for compatibility
+      email: user.email,
+      role: user.role,
+      provider: user.provider,
+    };
+    
+    const token = generateToken(userForToken);
     const cookie = createAuthCookie(token, validatedData.rememberMe);
 
     const response = NextResponse.json({
@@ -74,11 +89,11 @@ export async function POST(request: NextRequest) {
         ? 'User registered successfully. Please check your email for verification.'
         : 'User registered successfully with social login.',
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        emailVerified: user.emailVerified,
+        emailVerified: user.email_verified,
         provider: user.provider,
       },
       requiresVerification: validatedData.provider === 'email',
@@ -102,25 +117,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-async function sendVerificationEmail(email: string, token: string) {
-  // In production, use SendGrid or similar email service
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
-  
-  console.log('Email verification URL:', verificationUrl);
-  
-  // TODO: Implement actual email sending
-  // await sendEmail({
-  //   to: email,
-  //   subject: 'Verify your PropRent account',
-  //   html: `
-  //     <h1>Welcome to PropRent!</h1>
-  //     <p>Please click the link below to verify your email address:</p>
-  //     <a href="${verificationUrl}">Verify Email</a>
-  //     <p>This link will expire in 24 hours.</p>
-  //   `
-  // });
-}
-
 
 export const runtime = 'nodejs';

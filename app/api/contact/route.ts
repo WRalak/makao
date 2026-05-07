@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getDatabase from '@/lib/database';
 import { handleDatabaseError } from '@/lib/database-helpers';
 
 export async function POST(request: NextRequest) {

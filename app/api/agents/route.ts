@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     // Try database first, but fall back to dummy data if connection fails
     try {
       // Build WHERE conditions
-      let whereConditions = ['role = $1', 'status = $2'];
-      let queryParams: any[] = ['agent', 'active'];
+      let whereConditions = ['role = $1', 'is_active = $2', 'is_banned = $3'];
+      let queryParams: any[] = ['agent', 'true', 'false'];
       let paramIndex = 3;
 
       if (validatedData.search) {

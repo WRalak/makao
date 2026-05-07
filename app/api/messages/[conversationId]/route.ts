@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
+
 import Message from '@/models/Message';
 import { verifyToken } from '@/lib/auth';
-
 // GET - Fetch messages in a conversation
 export async function GET(
   request: NextRequest,
@@ -15,7 +14,12 @@ export async function GET(
     }
 
     const decoded = verifyToken(token);
-    await connectDB();
+    
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
+    await getDatabase();
 
     const { conversationId } = params;
 
@@ -32,11 +36,7 @@ export async function GET(
     }
 
     // Get messages in conversation
-    const messages = await Message.find({ conversationId })
-      .populate('senderId', 'name email')
-      .populate('receiverId', 'name email')
-      .sort({ createdAt: 1 })
-      .lean();
+    const messages = await Message.find({ conversationId });
 
     return NextResponse.json(messages);
   } catch (error) {

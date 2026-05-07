@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
-import Property from '@/models/Property';
-import Message from '@/models/Message';
-import Favorite from '@/models/Favorite';
+import { db } from '@/lib/neon';
+import { users, properties, messages, favorites } from '@/lib/schema';
+import { eq, desc, count } from 'drizzle-orm';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -21,56 +19,91 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tenant access required' }, { status: 403 });
     }
 
-    await connectDB();
-
-    const tenant = await User.findById(decoded.userId);
+    // Get tenant
+    const [tenant] = await db.select()
+      .from(users)
+      .where(eq(users.id, parseInt(decoded.userId)))
+      .limit(1);
+    
     if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    // Get tenant's favorites
-    const favorites = await Favorite.find({ tenantId: tenant._id })
-      .populate({
-        path: 'propertyId',
-        populate: {
-          path: 'agentId',
-          select: 'name email phone'
-        }
-      })
-      .sort({ createdAt: -1 })
-      .lean();
+    // Get tenant's favorites with property and agent info
+    const favoritesData = await db.select({
+      favorite: favorites,
+      property: properties,
+      agent: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone
+      }
+    })
+    .from(favorites)
+    .leftJoin(properties, eq(favorites.propertyId, properties.id))
+    .leftJoin(users, eq(properties.agentId, users.id))
+    .where(eq(favorites.userId, tenant.id))
+    .orderBy(desc(favorites.createdAt))
+    .limit(5);
 
-    // Get tenant's messages
-    const messages = await Message.find({ receiverId: tenant._id })
-      .populate({
-        path: 'senderId',
-        select: 'name email'
-      })
-      .populate({
-        path: 'propertyId',
-        select: 'title address rent images'
-      })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .lean();
+    // Get tenant's messages with sender and property info
+    const messagesData = await db.select({
+      message: messages,
+      sender: {
+        id: users.id,
+        name: users.name,
+        email: users.email
+      },
+      property: {
+        id: properties.id,
+        title: properties.title,
+        street: properties.street,
+        city: properties.city,
+        rentAmount: properties.rentAmount,
+        images: properties.images
+      }
+    })
+    .from(messages)
+    .leftJoin(users, eq(messages.senderId, users.id))
+    .leftJoin(properties, eq(messages.propertyId, properties.id))
+    .where(eq(messages.receiverId, tenant.id))
+    .orderBy(desc(messages.createdAt))
+    .limit(10);
 
     // Calculate stats
-    const totalFavorites = favorites.length;
-    const totalMessages = await Message.countDocuments({ receiverId: tenant._id });
+    const [totalFavoritesResult] = await db.select({ count: count() })
+      .from(favorites)
+      .where(eq(favorites.userId, tenant.id));
+    
+    const [totalMessagesResult] = await db.select({ count: count() })
+      .from(messages)
+      .where(eq(messages.receiverId, tenant.id));
+    
+    const totalFavorites = totalFavoritesResult?.count || 0;
+    const totalMessages = totalMessagesResult?.count || 0;
 
     // Format recent favorites
-    const recentFavorites = favorites.slice(0, 5).map(favorite => ({
-      _id: favorite._id,
-      property: favorite.propertyId,
+    const recentFavorites = favoritesData.map(({ favorite, property, agent }) => ({
+      id: favorite.id,
+      property: property ? {
+        id: property.id,
+        title: property.title,
+        street: property.street,
+        city: property.city,
+        rentAmount: property.rentAmount,
+        images: property.images,
+        agent: agent
+      } : null,
       createdAt: favorite.createdAt,
     }));
 
     // Format recent messages
-    const recentMessages = messages.map(message => ({
-      _id: message._id,
+    const recentMessages = messagesData.map(({ message, sender, property }) => ({
+      id: message.id,
       content: message.content,
-      agentId: message.senderId,
-      property: message.propertyId,
+      sender: sender,
+      property: property,
       createdAt: message.createdAt,
       isRead: message.isRead,
     }));

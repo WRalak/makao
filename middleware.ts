@@ -6,10 +6,29 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/', '/properties', '/property/[id]'];
-  const isPublicRoute = publicRoutes.some(route => 
-    pathname.startsWith(route.replace('[id]', ''))
-  );
+  const publicRoutes = [
+    '/login', 
+    '/register', 
+    '/', 
+    '/properties', 
+    '/about',
+    '/contact',
+    '/careers',
+    '/blog',
+    '/help',
+    '/faqs',
+    '/terms',
+    '/privacy',
+    '/cookies'
+  ];
+  
+  // Check if path is public or starts with a public route
+  const isPublicRoute = publicRoutes.some(route => {
+    if (route === pathname) return true;
+    if (route === '/properties' && pathname.startsWith('/properties')) return true;
+    if (route === '/property/[id]' && /^\/property\/[^\/]+$/.test(pathname)) return true;
+    return false;
+  });
 
   // Admin-only routes
   const adminRoutes = ['/admin', '/api/admin'];

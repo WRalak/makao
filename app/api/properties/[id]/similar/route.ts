@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/database';
 import Property from '@/models/Property';
 
 // GET - Fetch similar properties
@@ -8,8 +7,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
-    
     const property = await Property.findById(params.id);
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });

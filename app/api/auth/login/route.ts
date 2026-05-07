@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const user = await queryOne(
-      'SELECT id, name, email, password, role, status, email_verified, subscription FROM users WHERE email = $1',
+      'SELECT id, name, email, password, role, is_active, is_banned, email_verified FROM users WHERE email = $1',
       [validatedData.email]
     );
 
@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.status === 'banned') {
+    if (!user.is_active || user.is_banned) {
       return NextResponse.json(
-        { error: 'Account has been banned' },
+        { error: 'Account has been banned or deactivated' },
         { status: 403 }
       );
     }
@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
         emailVerified: user.email_verified,
-        subscription: user.subscription,
       },
     });
 
@@ -68,8 +67,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Login error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

@@ -17,6 +17,7 @@ interface Message {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  readAt?: Date;
 }
 
 interface MessageWithUsers extends Message {
@@ -24,6 +25,7 @@ interface MessageWithUsers extends Message {
   senderEmail?: string;
   receiverName?: string;
   receiverEmail?: string;
+  readAt?: Date;
 }
 
 class Message {
@@ -88,6 +90,34 @@ class Message {
     
     const result = await query(sql, [status, id]) as Message[];
     return result[0];
+  }
+
+  static async findById(id: number) {
+    const sql = `
+      SELECT m.*, u1.name as sender_name, u1.email as sender_email, 
+             u2.name as receiver_name, u2.email as receiver_email
+      FROM messages m
+      LEFT JOIN users u1 ON m.sender_id = u1.id
+      LEFT JOIN users u2 ON m.receiver_id = u2.id
+      WHERE m.id = $1
+      LIMIT 1
+    `;
+    
+    return await queryOne<MessageWithUsers>(sql, [id]);
+  }
+
+  static async aggregate(pipeline: any[]) {
+    // This is a placeholder for aggregation functionality
+    // In a real implementation, you'd translate MongoDB aggregation to SQL
+    console.log('Aggregation pipeline:', pipeline);
+    return [];
+  }
+
+  async save() {
+    // This is a placeholder for save functionality
+    // In a real implementation, you'd update the database
+    console.log('Saving message:', this);
+    return this;
   }
 }
 

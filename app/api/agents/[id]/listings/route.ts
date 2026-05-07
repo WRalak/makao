@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
 import Property from '@/models/Property';
 
 // GET - Fetch agent's property listings
@@ -15,21 +14,18 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '12');
     const skip = (page - 1) * limit;
 
-    await connectDB();
-
     // Build query
     const query: any = { agentId: id };
     if (status !== 'all') {
       query.status = status;
     }
 
-    const properties = await Property.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await Property.countDocuments(query);
+    // Get all properties (already sorted by created_at DESC in the model)
+    const allProperties = await Property.find(query);
+    
+    // Apply pagination manually
+    const total = allProperties.length;
+    const properties = allProperties.slice(skip, skip + limit);
 
     return NextResponse.json({
       properties,

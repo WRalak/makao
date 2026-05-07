@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
 
     // Get user from database
     const user = await queryOne(
-      'SELECT id, name, email, role, avatar_url, phone, email_verified, subscription, status FROM users WHERE id = $1',
+      'SELECT id, name, email, role, avatar, phone, email_verified, is_active, is_banned FROM users WHERE id = $1',
       [decoded.userId]
     );
 
-    if (!user || user.status === 'banned') {
+    if (!user || !user.is_active || user.is_banned) {
       return NextResponse.json(
         { error: 'User not found or banned' },
         { status: 404 }
@@ -43,12 +43,11 @@ export async function GET(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
-        avatar: user.avatar_url,
+        avatar: user.avatar,
         phone: user.phone,
         emailVerified: user.email_verified,
-        subscription: user.subscription,
-        isActive: user.status === 'active',
-        isBanned: user.status === 'banned',
+        isActive: user.is_active,
+        isBanned: user.is_banned,
       },
     });
 

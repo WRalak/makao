@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import connectDB from '@/lib/mongoose';
-// import Property from '@/models/Property';
+// // import Property from '@/models/Property';
 // import User from '@/models/User';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
