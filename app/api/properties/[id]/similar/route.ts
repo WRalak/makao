@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
+import connectDB from '@/lib/database';
 import Property from '@/models/Property';
 
 // GET - Fetch similar properties
@@ -15,22 +15,8 @@ export async function GET(
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    // Find similar properties based on location, price range, and bedrooms
-    const minPrice = property.rent * 0.8; // 20% less
-    const maxPrice = property.rent * 1.2; // 20% more
-    
-    const similarProperties = await Property.find({
-      _id: { $ne: property._id },
-      status: 'available',
-      isApproved: true,
-      'address.city': property.address.city,
-      rent: { $gte: minPrice, $lte: maxPrice },
-      bedrooms: { $gte: property.bedrooms - 1, $lte: property.bedrooms + 1 }
-    })
-    .populate('agentId', 'name email phone')
-    .sort({ createdAt: -1 })
-    .limit(6)
-    .lean();
+    // Find similar properties using the new findSimilar method
+    const similarProperties = await Property.findSimilar(params.id, property);
 
     return NextResponse.json(similarProperties);
   } catch (error) {

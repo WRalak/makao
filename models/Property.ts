@@ -112,6 +112,38 @@ class Property {
     return result[0];
   }
 
+  static async findSimilar(propertyId: string, property: any) {
+    const minPrice = property.rent * 0.8; // 20% less
+    const maxPrice = property.rent * 1.2; // 20% more
+    const minBedrooms = property.bedrooms - 1;
+    const maxBedrooms = property.bedrooms + 1;
+    
+    const sql = `
+      SELECT p.*, u.name as agent_name, u.email as agent_email, u.phone as agent_phone
+      FROM properties p
+      LEFT JOIN users u ON p.agent_id = u.id
+      WHERE p.id != $1 
+        AND p.status = 'available'
+        AND p.is_approved = true
+        AND p.city = $2
+        AND p.rent BETWEEN $3 AND $4
+        AND p.bedrooms BETWEEN $5 AND $6
+      ORDER BY p.created_at DESC
+      LIMIT 6
+    `;
+    
+    const result = await query(sql, [
+      propertyId,
+      property.address.city,
+      minPrice,
+      maxPrice,
+      minBedrooms,
+      maxBedrooms
+    ]);
+    
+    return result as PropertyWithAgent[];
+  }
+
   static async delete(id: string) {
     const sql = 'DELETE FROM properties WHERE id = $1';
     await query(sql, [id]);
